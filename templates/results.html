@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - CarMatch Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #001a8d 0%, #110886 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #ffd700;
+        }
+
+        .main-content {
+            padding: 40px 0;
+        }
+
+        .results-header {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .search-param {
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 2px solid #667eea;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .car-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .car-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .car-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .car-rank {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .car-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-right: 50px;
+        }
+
+        .car-price {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+
+        .car-specs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .spec-item {
+            background: #f8f9fa;
+            padding: 0.8rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .spec-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.3rem;
+        }
+
+        .spec-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .similarity-score {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .car-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #2c3e50;
+            border: 2px solid #e1e8ed;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .no-results {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .page-btn {
+            padding: 0.8rem 1.2rem;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover,
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .car-specs {
+                grid-template-columns: 1fr;
+            }
+            
+            .car-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="{{ url_for('index') }}" class="logo">🚗 CarMatch Pro</a>
+<ul class="nav-links">
+    <li><a href="{{ url_for('index') }}">Home</a></li>
+    <li><a href="{{ url_for('recommendation') }}">Find Cars</a></li>
+    <li><a href="{{ url_for('about') }}">About</a></li>
+    <li><a href="{{ url_for('dashboard') }}">Analytics</a></li>
+</ul>
+
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="results-header">
+                <h1>🎯 Your Perfect Car Matches</h1>
+                <p>Based on your preferences, here are the top recommendations</p>
+                
+                <div class="search-summary">
+                    <div class="search-param">Budget: PKR 20-25 Lakh</div>
+                    <div class="search-param">Fuel: Petrol</div>
+                    <div class="search-param">Transmission: Automatic</div>
+                    <div class="search-param">Age: 3-7 years</div>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 style="margin-bottom: 1rem; color: #2c3e50;">🔍 Refine Results</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <select id="sortBy">
+                            <option value="similarity">Sort by Match Score</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="year">Newest First</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="filterBrand">
+                            <option value="">All Brands</option>
+                            <option value="toyota">Toyota</option>
+                            <option value="honda">Honda</option>
+                            <option value="suzuki">Suzuki</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="filterPrice">
+                            <option value="">All Prices</option>
+                            <option value="0-1500000">Under 15 Lakh</option>
+                            <option value="1500000-2500000">15-25 Lakh</option>
+                            <option value="2500000-5000000">25+ Lakh</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-grid" id="resultsGrid">
+                <!-- Car results will be populated here -->
+            </div>
+
+            <div class="pagination">
+                <a href="#" class="page-btn">← Previous</a>
+                <a href="#" class="page-btn active">1</a>
+                <a href="#" class="page-btn">2</a>
+                <a href="#" class="page-btn">3</a>
+                <a href="#" class="page-btn">Next →</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Sample car data
+        const carData = [
+            {
+                rank: 1,
+                title: "Toyota Corolla GLi 2018",
+                price: "PKR 25,00,000",
+                fuel: "Petrol",
+                transmission: "Automatic",
+                engine: "1300 cc",
+                age: "6 years",
+                mileage: "14 km/l",
+                similarity: "98%"
+            },
+            {
+                rank: 2,
+                title: "Honda Civic VTi Oriel 2017",
+                price: "PKR 28,00,000",
+                fuel: "Petrol",
+                transmission: "Automatic",
+                engine: "1800 cc",
+                age: "7 years",
+                mileage: "12 km/l",
+                similarity: "95%"
+            },
+            {
+                rank: 3,
+                title: "Hyundai Elantra GLS 2018",
+                price: "PKR 29,00,000",
+                fuel: "Petrol",
+                transmission: "Automatic",
+                engine: "1600 cc",
+                age: "6 years",
+                mileage: "13 km/l",
+                similarity: "92%"
+            },
+            {
+                rank: 4,
+                title: "Suzuki Ciaz VXL 2019",
+                price: "PKR 22,00,000",
+                fuel: "Petrol",
+                transmission: "Automatic",
+                engine: "1400 cc",
+                age: "5 years",
+                mileage: "16 km/l",
+                similarity: "89%"
+            },
+            {
+                rank: 5,
+                title: "KIA Cerato 2018",
+                price: "PKR 26,50,000",
+                fuel: "Petrol",
+                transmission: "Automatic",
+                engine: "1600 cc",
+                age: "6 years",
+                mileage: "13 km/l",
+                similarity: "87%"
+            }
+        ];
+
+        function createCarCard(car) {
+            return `
+                <div class="car-card" style="animation: slideInUp 0.6s ease ${car.rank * 0.1}s both;">
+                    <div class="car-rank">${car.rank}</div>
+                    <div class="car-title">${car.title}</div>
+                    <div class="car-price">${car.price}</div>
+                    
+                    <div class="similarity-score">
+                        Match Score: ${car.similarity}
+                    </div>
+                    
+                    <div class="car-specs">
+                        <div class="spec-item">
+                            <div class="spec-label">Fuel Type</div>
+                            <div class="spec-value">${car.fuel}</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Transmission</div>
+                            <div class="spec-value">${car.transmission}</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Engine</div>
+                            <div class="spec-value">${car.engine}</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Mileage</div>
+                            <div class="spec-value">${car.mileage}</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Age</div>
+                            <div class="spec-value">${car.age}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="car-actions">
+                        <a href="#" class="btn btn-primary" onclick="viewDetails('${car.title}')">
+                            View Details
+                        </a>
+                        <a href="#" class="btn btn-secondary" onclick="saveToFavorites('${car.title}')">
+                            ❤️ Save
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResults(cars = carData) {
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = cars.map(car => createCarCard(car)).join('');
+        }
+
+        function viewDetails(carTitle) {
+            alert(`Viewing details for: ${carTitle}\n\nThis would typically open a detailed view with more information, photos, and contact details.`);
+        }
+
+        function saveToFavorites(carTitle) {
+            alert(`${carTitle} has been saved to your favorites!`);
+        }
+
+        // Filter and sort functionality
+        document.getElementById('sortBy').addEventListener('change', function() {
+            let sortedData = [...carData];
+            
+            switch(this.value) {
+                case 'price-low':
+                    sortedData.sort((a, b) => {
+                        const priceA = parseInt(a.price.replace(/[^\d]/g, ''));
+                        const priceB = parseInt(b.price.replace(/[^\d]/g, ''));
+                        return priceA - priceB;
+                    });
+                    break;
+                case 'price-high':
+                    sortedData.sort((a, b) => {
+                        const priceA = parseInt(a.price.replace(/[^\d]/g, ''));
+                        const priceB = parseInt(b.price.replace(/[^\d]/g, ''));
+                        return priceB - priceA;
+                    });
+                    break;
+                case 'similarity':
+                default:
+                    sortedData.sort((a, b) => a.rank - b.rank);
+                    break;
+            }
+            
+            renderResults(sortedData);
+        });
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize page
+        renderResults();
+
+        // Add search functionality
+        function performNewSearch() {
+            window.location.href = 'recommendation.html';
+        }
+
+        // Add floating action button for new search
+        const fab = document.createElement('button');
+        fab.innerHTML = '🔍';
+        fab.style.cssText = `
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        `;
+
+        fab.addEventListener('click', performNewSearch);
+        fab.addEventListener('mouseenter', () => {
+            fab.style.transform = 'scale(1.1)';
+        });
+        fab.addEventListener('mouseleave', () => {
+            fab.style.transform = 'scale(1)';
+        });
+
+        document.body.appendChild(fab);
+    </script>
+</body>
+</html>

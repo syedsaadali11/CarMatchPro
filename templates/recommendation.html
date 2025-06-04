@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Recommendation - CarMatch Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0926a9 0%, #052b8b 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #0004ff;
+        }
+
+        .main-content {
+            padding: 40px 0;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .price-range {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .range-input {
+            flex: 1;
+        }
+
+        .range-value {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #0624a6, #060897);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .results-container {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1000px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .car-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .car-card:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .car-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .car-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .car-detail {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .car-detail strong {
+            color: #667eea;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 2rem 1rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="{{ url_for('index') }}" class="logo">🚗 CarMatch Pro</a>
+<ul class="nav-links">
+    <li><a href="{{ url_for('index') }}">Home</a></li>
+    <li><a href="{{ url_for('recommendation') }}">Find Cars</a></li>
+    <li><a href="{{ url_for('about') }}">About</a></li>
+    <li><a href="{{ url_for('dashboard') }}">Analytics</a></li>
+</ul>
+
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="form-container">
+                <div class="form-header">
+                    <h1>Find Your Perfect Car</h1>
+                    <p>Tell us your preferences and we'll recommend the best cars for you</p>
+                </div>
+
+                <form id="recommendationForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="price">Budget (PKR)</label>
+                            <input type="range" id="price" name="price" min="500000" max="10000000" value="2000000" class="range-input">
+                            <div class="price-range">
+                                <span>500K</span>
+                                <div class="range-value" id="priceValue">20,00,000</div>
+                                <span>1 Crore</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+    <label for="mileage">Mileage (km)</label>
+    <input type="number" id="mileage" name="mileage" min="0" max="200000" value="70000" required>
+</div>
+
+                        <div class="form-group">
+                            <label for="engine_capacity">Engine Capacity (cc)</label>
+                            <input type="number" id="engine_capacity" name="engine_capacity" min="800" max="5000" value="1300" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vehicle_age">Vehicle Age (years)</label>
+                            <input type="number" id="vehicle_age" name="vehicle_age" min="0" max="20" value="5" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fuel_type">Fuel Type</label>
+                            <select id="fuel_type" name="fuel_type" required>
+                                <option value="">Select Fuel Type</option>
+                                <option value="Petrol">Petrol</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="CNG">CNG</option>
+                                <option value="Hybrid">Hybrid</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+    <label for="transmission">Transmission</label>
+    <select id="transmission" name="transmission" required>
+        <option value="">Select Transmission</option>
+        <option value="Not Available">Not Available</option>
+        <option value="Manual">Manual</option>
+        <option value="Automatic">Automatic</option>
+    </select>
+</div>
+
+                        <div class="form-group">
+                            <label for="assembly">Assembly</label>
+                            <select id="assembly" name="assembly" required>
+                                <option value="">Select Assembly</option>
+                                <option value="Local">Local</option>
+                                <option value="Imported">Imported</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        🔍 Find My Perfect Car
+                    </button>
+                </form>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Finding the perfect cars for you...</p>
+            </div>
+
+            <div class="results-container" id="results">
+                <div class="results-header">
+                    <h2>🎯 Recommended Cars for You</h2>
+                    <p>Based on your preferences and market analysis</p>
+                </div>
+                <div id="carResults"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // Price range slider
+    const priceSlider = document.getElementById('price');
+    const priceValue = document.getElementById('priceValue');
+
+    function formatPrice(price) {
+        if (price >= 10000000) {
+            return (price / 10000000).toFixed(1) + ' Crore';
+        } else if (price >= 100000) {
+            return (price / 100000).toFixed(0) + ' Lakh';
+        } else {
+            return price.toLocaleString();
+        }
+    }
+
+    priceSlider.addEventListener('input', function() {
+        priceValue.textContent = formatPrice(this.value);
+    });
+
+    // Form submission
+    document.getElementById('recommendationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate inputs
+        const form = e.target;
+        const price = form.price.value;
+        const mileage = form.mileage.value;
+        const engine_capacity = form.engine_capacity.value;
+        const vehicle_age = form.vehicle_age.value;
+        const fuel_type = form.fuel_type.value;
+        const transmission = form.transmission.value;
+        const assembly = form.assembly.value;
+
+        if (!price || !mileage || !engine_capacity || !vehicle_age || !fuel_type || !transmission || !assembly) {
+            alert('Please fill all fields.');
+            return;
+        }
+        if (isNaN(mileage) || isNaN(engine_capacity) || isNaN(vehicle_age)) {
+            alert('Mileage, Engine Capacity, and Vehicle Age must be numbers.');
+            return;
+        }
+
+        // Show loading
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+
+        // Send AJAX request to Flask
+        fetch('/get_recommendations', {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            if (data.success) {
+                showResults(data.recommendations);
+            } else {
+                alert('Error: ' + data.error);
+                document.getElementById('results').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            document.getElementById('loading').style.display = 'none';
+            alert('Error fetching recommendations: ' + error);
+            console.error('Fetch error:', error);
+        });
+    });
+
+    function showResults(cars) {
+        const resultsContainer = document.getElementById('results');
+        const carResults = document.getElementById('carResults');
+        
+        carResults.innerHTML = '';
+        
+        cars.forEach((car, index) => {
+            const carCard = document.createElement('div');
+            carCard.className = 'car-card';
+            carCard.style.animationDelay = `${index * 0.1}s`;
+            
+            carCard.innerHTML = `
+                <div class="car-title">${car.title}</div>
+                <div class="car-details">
+                    <div class="car-detail">
+                        <strong>Price:</strong><br>${car.price}
+                    </div>
+                    <div class="car-detail">
+                        <strong>Fuel:</strong><br>${car.fuel_type}
+                    </div>
+                    <div class="car-detail">
+                        <strong>Transmission:</strong><br>${car.transmission}
+                    </div>
+                    <div class="car-detail">
+                        <strong>Engine:</strong><br>${car.engine_capacity}
+                    </div>
+                    <div class="car-detail">
+                        <strong>Age:</strong><br>${car.vehicle_age}
+                    </div>
+                    <div class="car-detail">
+                        <strong>Similarity:</strong><br>${car.similarity}
+                    </div>
+                </div>
+            `;
+            
+            carResults.appendChild(carCard);
+        });
+        
+        resultsContainer.style.display = 'block';
+        resultsContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Form validation
+    const form = document.getElementById('recommendationForm');
+    const inputs = form.querySelectorAll('input[required], select[required]');
+
+    inputs.forEach(input => {
+        input.addEventListener('blur', validateField);
+        input.addEventListener('input', validateField);
+    });
+
+    function validateField(e) {
+        const field = e.target;
+        if (field.value.trim() === '') {
+            field.style.borderColor = '#e74c3c';
+        } else {
+            field.style.borderColor = '#27ae60';
+        }
+    }
+</script>
+</body>
+</html>

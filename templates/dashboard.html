@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - CarMatch Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #001c9a 0%, #052285 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #ffd700;
+        }
+
+        .main-content {
+            padding: 40px 0;
+        }
+
+        .dashboard-header {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #081f87, #04125a);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #031b85;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #0b078a;
+            font-size: 1.1rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-container {
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #073869;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .chart {
+            height: 300px;
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            padding: 1rem 0;
+            border-bottom: 2px solid #e1e8ed;
+            position: relative;
+        }
+
+        .bar {
+            background: linear-gradient(to top, #667eea, #051782);
+            border-radius: 5px 5px 0 0;
+            min-width: 40px;
+            margin: 0 5px;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .pie-chart {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin: 0 auto;
+            position: relative;
+            background: conic-gradient(
+                #667eea 0deg 120deg,
+                #764ba2 120deg 200deg,
+                #ff6b6b 200deg 280deg,
+                #ffd93d 280deg 360deg
+            );
+        }
+
+        .pie-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .insights-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .insight-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border-left: 5px solid #667eea;
+        }
+
+        .insight-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .trend-up {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .trend-down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                padding: 1rem;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="{{ url_for('index') }}" class="logo">🚗 CarMatch Pro</a>
+<ul class="nav-links">
+    <li><a href="{{ url_for('index') }}">Home</a></li>
+    <li><a href="{{ url_for('recommendation') }}">Find Cars</a></li>
+    <li><a href="{{ url_for('about') }}">About</a></li>
+    <li><a href="{{ url_for('dashboard') }}">Analytics</a></li>
+</ul>
+
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>📊 Market Analytics Dashboard</h1>
+                <p>Real-time insights into car market trends and recommendation patterns</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCars">50,247</div>
+                    <div class="stat-label">Total Cars Analyzed</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="recommendations">15,832</div>
+                    <div class="stat-label">Recommendations Made</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="accuracy">98.5%</div>
+                    <div class="stat-label">Accuracy Rate</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-number" id="clusters">8</div>
+                    <div class="stat-label">Market Segments</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Popular Car Brands</div>
+                    <div class="chart" id="brandChart">
+                        <div class="bar" style="height: 80%;">
+                            <div class="bar-value">2,450</div>
+                            <div class="bar-label">Toyota</div>
+                        </div>
+                        <div class="bar" style="height: 65%;">
+                            <div class="bar-value">1,980</div>
+                            <div class="bar-label">Honda</div>
+                        </div>
+                        <div class="bar" style="height: 55%;">
+                            <div class="bar-value">1,670</div>
+                            <div class="bar-label">Suzuki</div>
+                        </div>
+                        <div class="bar" style="height: 45%;">
+                            <div class="bar-value">1,370</div>
+                            <div class="bar-label">Hyundai</div>
+                        </div>
+                        <div class="bar" style="height: 35%;">
+                            <div class="bar-value">1,060</div>
+                            <div class="bar-label">KIA</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Fuel Type Distribution</div>
+                    <div class="pie-chart"></div>
+                    <div class="pie-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #667eea;"></div>
+                            <span>Petrol (65%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #764ba2;"></div>
+                            <span>Diesel (20%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff6b6b;"></div>
+                            <span>CNG (10%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffd93d;"></div>
+                            <span>Hybrid (5%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Price Range Preferences</div>
+                    <div class="chart" id="priceChart">
+                        <div class="bar" style="height: 60%;">
+                            <div class="bar-value">1,800</div>
+                            <div class="bar-label">5-15 Lakh</div>
+                        </div>
+                        <div class="bar" style="height: 85%;">
+                            <div class="bar-value">2,550</div>
+                            <div class="bar-label">15-25 Lakh</div>
+                        </div>
+                        <div class="bar" style="height: 70%;">
+                            <div class="bar-value">2,100</div>
+                            <div class="bar-label">25-35 Lakh</div>
+                        </div>
+                        <div class="bar" style="height: 40%;">
+                            <div class="bar-value">1,200</div>
+                            <div class="bar-label">35+ Lakh</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Monthly Recommendations</div>
+                    <div class="chart" id="monthlyChart">
+                        <div class="bar" style="height: 45%;">
+                            <div class="bar-value">890</div>
+                            <div class="bar-label">Jan</div>
+                        </div>
+                        <div class="bar" style="height: 55%;">
+                            <div class="bar-value">1,100</div>
+                            <div class="bar-label">Feb</div>
+                        </div>
+                        <div class="bar" style="height: 70%;">
+                            <div class="bar-value">1,400</div>
+                            <div class="bar-label">Mar</div>
+                        </div>
+                        <div class="bar" style="height: 85%;">
+                            <div class="bar-value">1,700</div>
+                            <div class="bar-label">Apr</div>
+                        </div>
+                        <div class="bar" style="height: 90%;">
+                            <div class="bar-value">1,800</div>
+                            <div class="bar-label">May</div>
+                        </div>
+                        <div class="bar" style="height: 95%;">
+                            <div class="bar-value">1,900</div>
+                            <div class="bar-label">Jun</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insights-section">
+                <h2 style="color: #2c3e50; margin-bottom: 1rem;">📈 Market Insights</h2>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-title">Most Popular Segment</div>
+                        <p>Mid-range sedans (15-25 Lakh) dominate user preferences with 35% of all recommendations.</p>
+                        <div class="trend-indicator trend-up">↗ +12% this month</div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-title">Fuel Efficiency Trend</div>
+                        <p>Users increasingly prefer cars with 15+ km/l mileage, showing growing environmental consciousness.</p>
+                        <div class="trend-indicator trend-up">↗ +8% preference</div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-title">Transmission Preference</div>
+                        <p>Automatic transmission requests have increased by 25% compared to last quarter.</p>
+                        <div class="trend-indicator trend-up">↗ +25% growth</div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-title">Age Factor</div>
+                        <p>Cars aged 3-7 years are most recommended, balancing affordability and reliability.</p>
+                        <div class="trend-indicator trend-up">↗ Stable demand</div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-title">Regional Trends</div>
+                        <p>Urban areas show 40% higher preference for compact cars compared to rural regions.</p>
+                        <div class="trend-indicator trend-up">↗ +15% urban growth</div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-title">Seasonal Patterns</div>
+                        <p>Car purchases peak during festival seasons (Eid, New Year) with 60% higher recommendation requests.</p>
+                        <div class="trend-indicator trend-up">↗ Seasonal spike</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Animate counters on page load
+        function animateCounters() {
+            const counters = [
+                { element: document.getElementById('totalCars'), target: 50247, suffix: '' },
+                { element: document.getElementById('recommendations'), target: 15832, suffix: '' },
+                { element: document.getElementById('accuracy'), target: 98.5, suffix: '%' },
+                { element: document.getElementById('clusters'), target: 8, suffix: '' }
+            ];
+
+            counters.forEach(counter => {
+                const element = counter.element;
+                const target = counter.target;
+                const suffix = counter.suffix;
+                let current = 0;
+                const increment = target / 100;
+                
+                const updateCounter = () => {
+                    if (current < target) {
+                        current += increment;
+                        if (suffix === '%') {
+                            element.textContent = current.toFixed(1) + suffix;
+                        } else {
+                            element.textContent = Math.floor(current).toLocaleString() + suffix;
+                        }
+                        setTimeout(updateCounter, 20);
+                    } else {
+                        if (suffix === '%') {
+                            element.textContent = target + suffix;
+                        } else {
+                            element.textContent = target.toLocaleString() + suffix;
+                        }
+                    }
+                };
+                
+                updateCounter();
+            });
+        }
+
+        // Animate bars on scroll
+        function animateBars() {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach((bar, index) => {
+                setTimeout(() => {
+                    bar.style.transform = 'scaleY(1)';
+                    bar.style.opacity = '1';
+                }, index * 200);
+            });
+        }
+
+        // Set initial bar styles
+        document.querySelectorAll('.bar').forEach(bar => {
+            bar.style.transformOrigin = 'bottom';
+            bar.style.transform = 'scaleY(0)';
+            bar.style.opacity = '0';
+            bar.style.transition = 'transform 0.6s ease, opacity 0.6s ease';
+        });
+
+        // Real-time data simulation
+        function updateRealTimeData() {
+            const totalCarsElement = document.getElementById('totalCars');
+            const recommendationsElement = document.getElementById('recommendations');
+            
+            setInterval(() => {
+                // Simulate new cars being added
+                const currentCars = parseInt(totalCarsElement.textContent.replace(/,/g, ''));
+                const newCarsCount = currentCars + Math.floor(Math.random() * 5) + 1;
+                totalCarsElement.textContent = newCarsCount.toLocaleString();
+                
+                // Simulate new recommendations
+                const currentRecs = parseInt(recommendationsElement.textContent.replace(/,/g, ''));
+                const newRecsCount = currentRecs + Math.floor(Math.random() * 3) + 1;
+                recommendationsElement.textContent = newRecsCount.toLocaleString();
+            }, 10000); // Update every 10 seconds
+        }
+
+        // Interactive chart tooltips
+        function addChartInteractivity() {
+            const bars = document.querySelectorAll('.bar');
+            
+            bars.forEach(bar => {
+                bar.addEventListener('mouseenter', function() {
+                    this.style.filter = 'brightness(1.1)';
+                    this.style.boxShadow = '0 5px 15px rgba(102, 126, 234, 0.3)';
+                });
+                
+                bar.addEventListener('mouseleave', function() {
+                    this.style.filter = 'brightness(1)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+        }
+
+        // Initialize dashboard
+        window.addEventListener('load', () => {
+            setTimeout(animateCounters, 500);
+            setTimeout(animateBars, 1000);
+            updateRealTimeData();
+            addChartInteractivity();
+        });
+
+        // Refresh data button functionality
+        function refreshDashboard() {
+            // Simulate data refresh
+            const refreshBtn = document.createElement('button');
+            refreshBtn.textContent = '🔄 Refresh Data';
+            refreshBtn.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 25px;
+                cursor: pointer;
+                font-weight: bold;
+                z-index: 1000;
+                transition: transform 0.3s ease;
+            `;
+            
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.style.transform = 'rotate(360deg)';
+                setTimeout(() => {
+                    refreshBtn.style.transform = 'rotate(0deg)';
+                    animateCounters();
+                }, 1000);
+            });
+            
+            refreshBtn.addEventListener('mouseenter', () => {
+                refreshBtn.style.transform = 'scale(1.05)';
+            });
+            
+            refreshBtn.addEventListener('mouseleave', () => {
+                refreshBtn.style.transform = 'scale(1)';
+            });
+            
+            document.body.appendChild(refreshBtn);
+        }
+
+        // Add refresh button
+        refreshDashboard();
+
+        // Mobile responsiveness
+        function handleMobileView() {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.chart').forEach(chart => {
+                    chart.style.height = '200px';
+                });
+            }
+        }
+
+        window.addEventListener('resize', handleMobileView);
+        handleMobileView();
+    </script>
+</body>
+</html>
