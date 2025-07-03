@@ -1,115 +1,130 @@
+"""
+CarMatchPro – Flask‑based ML Car Recommendation App
+Author: Syed Saad Ali
+"""
+
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import joblib
 from sklearn.metrics.pairwise import cosine_similarity
-import os
+from pathlib import Path
 import numpy as np
+import os
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = 'your-secret-key-change-this'
+# ------------------------------------------------------------------------
+# Paths & configuration
+# ------------------------------------------------------------------------
+BASE_DIR   = Path(__file__).resolve().parent
+DATA_DIR   = BASE_DIR / "data"
+MODEL_DIR  = BASE_DIR / "models"
 
-# Load models and data with error handling
+app = Flask(__name__, template_folder="templates", static_folder="static")
+
+# Secret key:  set `SECRET_KEY` in your environment or .env file
+app.secret_key = os.getenv("SECRET_KEY", "dev")      # Fallback 'dev' for local use
+
+# Optional debug flag:  FLASK_DEBUG=true / false
+DEBUG_MODE = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+
+# ------------------------------------------------------------------------
+# Load models & data (gracefully falls back to mock mode)
+# ------------------------------------------------------------------------
 try:
-    df = pd.read_csv(r'D:\pakwheels\data\clustered_pakwheels.csv')
-    kmeans = joblib.load(r'D:\pakwheels\models\kmeans_model.pkl')
-    scaler = joblib.load(r'D:\pakwheels\models\scaler.pkl')
-    le_fuel, le_trans, le_assembly = joblib.load(r'D:\pakwheels\models\label_encoders.pkl')
+    df       = pd.read_csv(DATA_DIR / "clustered_pakwheels.csv")
+    kmeans   = joblib.load(MODEL_DIR / "kmeans_model.pkl")
+    scaler   = joblib.load(MODEL_DIR / "scaler.pkl")
+    le_fuel, le_trans, le_assembly = joblib.load(MODEL_DIR / "label_encoders.pkl")
     print("✅ Models loaded successfully!")
 except Exception as e:
-    print(f"⚠️ Error loading models: {e}")
+    print(f"⚠️  Error loading models: {e}")
     print("📝 Using mock data for demonstration")
-    df = None
-    kmeans = None
-    scaler = None
-    le_fuel = le_trans = le_assembly = None
+    df = kmeans = scaler = le_fuel = le_trans = le_assembly = None
 
-def recommend_cars(price, mileage, engine_capacity, vehicle_age, fuel_type, transmission, assembly, top_n=5):
+# ------------------------------------------------------------------------
+# Recommendation logic
+# ------------------------------------------------------------------------
+def recommend_cars(price, mileage, engine_capacity, vehicle_age,
+                   fuel_type, transmission, assembly, top_n=5):
     try:
-        if any(model is None for model in [df, kmeans, scaler, le_fuel, le_trans, le_assembly]):
-            print("Error: One or more models are None")
+        # If any model component is missing → use mock
+        if any(m is None for m in [df, kmeans, scaler, le_fuel, le_trans, le_assembly]):
             return get_mock_recommendations()
-        
-        # Log label encoder categories
-        print(f"le_fuel.classes_: {le_fuel.classes_}")
-        print(f"le_trans.classes_: {le_trans.classes_}")
-        print(f"le_assembly.classes_: {le_assembly.classes_}")
-        
-        # Log input values
-        print(f"Input values: price={price}, mileage={mileage}, engine_capacity={engine_capacity}, "
-              f"vehicle_age={vehicle_age}, fuel_type={fuel_type}, transmission={transmission}, assembly={assembly}")
-        
-        fuel_encoded = le_fuel.transform([fuel_type])[0]
-        trans_encoded = le_trans.transform([transmission])[0]
+
+        # Encode categorical features
+        fuel_encoded     = le_fuel.transform([fuel_type])[0]
+        trans_encoded    = le_trans.transform([transmission])[0]
         assembly_encoded = le_assembly.transform([assembly])[0]
 
-        user_input = [[price, mileage, engine_capacity, vehicle_age, fuel_encoded, trans_encoded, assembly_encoded]]
-        user_scaled = scaler.transform(user_input)
-        print(f"Scaled input: {user_scaled}")
+        # Scale input
+        user_input   = [[price, mileage, engine_capacity, vehicle_age,
+                         fuel_encoded, trans_encoded, assembly_encoded]]
+        user_scaled  = scaler.transform(user_input)
 
-        # Predict cluster and log distances to all clusters
-        user_cluster = kmeans.predict(user_scaled)[0]
-        print(f"Predicted cluster: {user_cluster}")
+        # Predict cluster
+        user_cluster      = kmeans.predict(user_scaled)[0]
         cluster_distances = kmeans.transform(user_scaled)[0]
-        print(f"Distances to clusters: {dict(zip(range(len(cluster_distances)), cluster_distances))}")
 
-        cluster_cars = df[df['cluster'] == user_cluster].copy()
-        feature_cols = ['price', 'mileage', 'engine_capacity', 'vehicle_age',
-                        'fuel_type_encoded', 'transmission_encoded', 'assembly_encoded']
+        # Within‑cluster similarity
+        feature_cols   = ['price', 'mileage', 'engine_capacity', 'vehicle_age',
+                          'fuel_type_encoded', 'transmission_encoded', 'assembly_encoded']
+        cluster_cars   = df[df['cluster'] == user_cluster].copy()
         cluster_scaled = scaler.transform(cluster_cars[feature_cols])
 
-        # Apply weights to prioritize price
-        weights = [2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5]  # Higher weight for price
-        user_scaled_weighted = user_scaled * weights
-        cluster_scaled_weighted = cluster_scaled * weights
-        similarities = cosine_similarity(user_scaled_weighted, cluster_scaled_weighted)[0]
-
+        # Weighted cosine similarity (price given extra weight)
+        weights                   = np.array([2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5])
+        user_scaled_weighted      = user_scaled * weights
+        cluster_scaled_weighted   = cluster_scaled * weights
+        similarities              = cosine_similarity(user_scaled_weighted,
+                                                      cluster_scaled_weighted)[0]
         cluster_cars['similarity'] = similarities
-        # Dynamic price filter: ±10% of input price
+
+        # Price filter: ±10 % (upper bound = user budget)
         price_range = (price * 0.9, price)
-        print(f"Filtering cars with price between {price_range[0]:,} and {price_range[1]:,}")
-        cluster_cars = cluster_cars[(cluster_cars['price'] >= price_range[0]) & 
-                                   (cluster_cars['price'] <= price_range[1])]
-        print(f"Number of cars after price filter: {len(cluster_cars)}")
-        
-        if len(cluster_cars) == 0:
-            print("No cars found in price range. Falling back to closest cluster.")
-            # Try next closest cluster
-            sorted_clusters = np.argsort(cluster_distances)
-            for next_cluster in sorted_clusters[1:]:
+        cluster_cars = cluster_cars[
+            (cluster_cars['price'] >= price_range[0]) &
+            (cluster_cars['price'] <= price_range[1])
+        ]
+
+        # If empty → try next closest clusters
+        if cluster_cars.empty:
+            for next_cluster in np.argsort(cluster_distances)[1:]:
                 cluster_cars = df[df['cluster'] == next_cluster].copy()
-                cluster_scaled = scaler.transform(cluster_cars[feature_cols])
+                cluster_scaled          = scaler.transform(cluster_cars[feature_cols])
                 cluster_scaled_weighted = cluster_scaled * weights
-                similarities = cosine_similarity(user_scaled_weighted, cluster_scaled_weighted)[0]
+                similarities            = cosine_similarity(user_scaled_weighted,
+                                                             cluster_scaled_weighted)[0]
                 cluster_cars['similarity'] = similarities
-                cluster_cars = cluster_cars[(cluster_cars['price'] >= price_range[0]) & 
-                                           (cluster_cars['price'] <= price_range[1])]
-                print(f"Checking cluster {next_cluster}: {len(cluster_cars)} cars")
-                if len(cluster_cars) > 0:
+                cluster_cars = cluster_cars[
+                    (cluster_cars['price'] >= price_range[0]) &
+                    (cluster_cars['price'] <= price_range[1])
+                ]
+                if not cluster_cars.empty:
                     break
-            if len(cluster_cars) == 0:
-                print("No cars found in any cluster. Using mock recommendations.")
-                return get_mock_recommendations()
 
+        if cluster_cars.empty:
+            return get_mock_recommendations()
+
+        # Top‑N recommendations
         top_matches = cluster_cars.sort_values(by='similarity', ascending=False).head(top_n)
-
-        recommendations = [{
-            'rank': i + 1,
-            'title': row['title'],
-            'price': f"PKR {int(row['price']):,}",
-            'fuel_type': row['fuel_type'],
-            'transmission': row['transmission'],
+        return [{
+            'rank'          : i + 1,
+            'title'         : row['title'],
+            'price'         : f"PKR {int(row['price']):,}",
+            'fuel_type'     : row['fuel_type'],
+            'transmission'  : row['transmission'],
             'engine_capacity': f"{int(row['engine_capacity'])} cc",
-            'vehicle_age': f"{int(row['vehicle_age'])} years",
-            'mileage': f"{int(row['mileage']):,} km",
-            'similarity': f"{row['similarity'] * 100:.1f}%"
+            'vehicle_age'   : f"{int(row['vehicle_age'])} years",
+            'mileage'       : f"{int(row['mileage']):,} km",
+            'similarity'    : f"{row['similarity'] * 100:.1f}%"
         } for i, (_, row) in enumerate(top_matches.iterrows())]
-        
-        print("Recommendations:", [f"{rec['title']} ({rec['price']}, similarity={rec['similarity']})" for rec in recommendations])
-        return recommendations
+
     except Exception as e:
         print(f"Error in recommendation: {e}")
         return get_mock_recommendations()
 
+# ------------------------------------------------------------------------
+# Mock recommendations (shown when models are absent)
+# ------------------------------------------------------------------------
 def get_mock_recommendations():
     return [
         {
@@ -136,29 +151,36 @@ def get_mock_recommendations():
         }
     ]
 
-# ---- ROUTES ---- #
+# ------------------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------------------
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/recommendation')
 def recommendation():
-    return render_template('recommendation.html', 
+    return render_template('recommendation.html',
                            fuel_types=['Petrol', 'Diesel', 'CNG', 'Hybrid'],
                            transmissions=['Manual', 'Automatic'],
                            assemblies=['Local', 'Imported'])
+
 
 @app.route('/about')
 def about():
     return render_template('about.html')
 
+
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
+
 @app.route('/results')
 def results():
     return render_template('results.html')
+
 
 @app.route('/get_recommendations', methods=['POST'])
 def get_recommendations():
@@ -179,13 +201,13 @@ def get_recommendations():
             'success': True,
             'recommendations': recommendations,
             'search_params': {
-                'Budget': f"PKR {int(data['price']):,}",
-                'Mileage': f"{data['mileage']} km/l",
-                'Engine': f"{data['engine_capacity']} cc",
-                'Age': f"{data['vehicle_age']} years",
-                'Fuel': data['fuel_type'],
+                'Budget'      : f"PKR {int(data['price']):,}",
+                'Mileage'     : f"{data['mileage']} km/l",
+                'Engine'      : f"{data['engine_capacity']} cc",
+                'Age'         : f"{data['vehicle_age']} years",
+                'Fuel'        : data['fuel_type'],
                 'Transmission': data['transmission'],
-                'Assembly': data['assembly']
+                'Assembly'    : data['assembly']
             }
         })
 
@@ -193,7 +215,9 @@ def get_recommendations():
         print(f"Error: {e}")
         return jsonify({'error': 'Invalid input.'}), 400
 
-# ---- MAIN ---- #
+# ------------------------------------------------------------------------
+# Main entry
+# ------------------------------------------------------------------------
 if __name__ == '__main__':
-    print("🚀 CarMatch Pro is running at http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("🚀 CarMatchPro is running at http://127.0.0.1:5000")
+    app.run(debug=DEBUG_MODE, host='0.0.0.0', port=5000)
