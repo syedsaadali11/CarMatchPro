@@ -1,90 +1,98 @@
-# 🚗 CarMatch Pro - Smart Car Recommendation System
+# 🚗 CarMatchPro
 
-[![Built with Flask](https://img.shields.io/badge/Framework-Flask-blue)](https://flask.palletsprojects.com/)  
-[![Python](https://img.shields.io/badge/Python-3.7%2B-yellow)](https://www.python.org/)  
-[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
+**CarMatchPro** is an intelligent car recommendation system built with Flask. It leverages machine learning to match users with cars that align with their preferences such as budget, mileage, engine capacity, fuel type, and more. The system intelligently clusters vehicles and ranks them using similarity scoring.
 
 ---
 
-## 📖 Project Overview
+## 📌 Key Features
 
-**CarMatch Pro** is a web-based car recommendation system built using the Flask framework in Python.  
-The app helps users find the best matching used cars based on their preferences like budget, mileage, engine capacity, vehicle age, fuel type, transmission, and assembly origin.
-
-The system leverages machine learning models to cluster and recommend vehicles that closely align with user inputs, providing a smart and personalized car search experience.
-
----
-
-## 🛠️ Technologies and Libraries Used
-
-- **Flask** - Lightweight Python web framework to build the server and render dynamic HTML pages.
-- **Pandas** - Data manipulation and analysis library to handle the car dataset.
-- **Joblib** - For loading pre-trained machine learning models and label encoders.
-- **scikit-learn** (`sklearn`) - Used for clustering (KMeans), scaling (StandardScaler), and similarity calculations (cosine similarity).
-- **NumPy** - For numerical operations and array handling.
-- **HTML/CSS/JS** - For front-end templates and styling served through Flask's template engine (`Jinja2`).
+- 🔍 **User-driven Recommendations** based on price, mileage, age, engine capacity, fuel type, transmission, and assembly.
+- 🧠 **Machine Learning Powered** using KMeans clustering and cosine similarity.
+- 🔁 **Mock Mode Support** if models/data are not available.
+- 🌐 **Responsive UI** built with HTML, CSS, and Flask templates.
 
 ---
 
-## ⚙️ Application Structure
+## 🧠 ML Models Used
 
-- `app.py` - Main Flask application file containing routes, model loading, and recommendation logic.
-- `templates/` - HTML templates for rendering pages like home, recommendation form, results, dashboard, about, etc.
-- `static/` - Static assets such as CSS, JavaScript, and images.
-- `data/clustered_pakwheels.csv` - Preprocessed vehicle dataset with cluster labels.
-- `models/` - Contains serialized ML models and label encoders:
-  - `kmeans_model.pkl` - KMeans clustering model.
-  - `scaler.pkl` - Scaler for feature normalization.
-  - `label_encoders.pkl` - Label encoders for categorical features (fuel, transmission, assembly).
+| Component | Algorithm | Library | Accuracy / Note |
+|----------|-----------|---------|------------------|
+| Clustering | `KMeans` | `scikit-learn` | Number of clusters determined via Elbow Method, Silhouette Score ≈ 0.62|
+| Similarity Ranking | `Cosine Similarity` | `sklearn.metrics.pairwise` | Custom weighted scoring |
+| Preprocessing | `StandardScaler`, `LabelEncoder` | `scikit-learn` | Applied to continuous & categorical features |
 
----
-
-## 🚀 Features
-
-- **User Input:** Users provide their preferences including budget, mileage, engine size, vehicle age, fuel type, transmission type, and assembly origin.
-- **Data Preprocessing:** Inputs are encoded and scaled using pre-trained label encoders and scalers.
-- **Clustering:** KMeans clusters cars into groups; user input is matched to closest cluster.
-- **Similarity Matching:** Cosine similarity with feature weighting prioritizes price but considers multiple attributes.
-- **Dynamic Filtering:** Results are filtered dynamically by ±10% of user’s budget for relevant suggestions.
-- **Fallback Handling:** If no cars match criteria in the closest cluster, the system searches adjacent clusters or returns mock recommendations.
-- **REST API Endpoint:** `/get_recommendations` accepts POST requests and returns JSON with top car matches and search parameters.
-- **User-Friendly Web Interface:** Multiple routes for home, recommendation form, results display, dashboard, and about page.
+> 📂 Models are stored in `/models` (not included in this repo):
+> - `kmeans_model.pkl`
+> - `scaler.pkl`
+> - `label_encoders.pkl` (for fuel, transmission, assembly)
 
 ---
 
-## 📂 How It Works - Core Components
+## 🧪 How It Works
 
-### Model and Data Loading
+1. **User Input**  
+   The user submits preferences via a web form.
 
-- On startup, the app loads:
-  - The car dataset (`clustered_pakwheels.csv`) with clusters.
-  - The pre-trained KMeans clustering model.
-  - Scalers and label encoders to transform user inputs and data features.
+2. **Data Preprocessing**  
+   Input is scaled and encoded using the saved pre-fitted scaler and label encoders.
 
-### Recommendation Logic (`recommend_cars` function)
+3. **Clustering**  
+   The input is assigned to a vehicle cluster using a trained KMeans model.
 
-- User inputs are label encoded and scaled.
-- The model predicts the cluster closest to user inputs.
-- Calculates cosine similarity between user input and cars in the cluster with weighted features.
-- Filters cars dynamically by price range.
-- Returns top N (default 5) cars sorted by similarity.
+4. **Similarity Calculation**  
+   Cosine similarity is calculated between the user's input and cars within the same cluster.
 
-### Routes
+5. **Recommendation Ranking**  
+   Cars are filtered by price range (±10%) and sorted by similarity.
 
-| Route            | Method | Description                        |
-| ---------------- | ------ | -------------------------------- |
-| `/`              | GET    | Homepage                         |
-| `/recommendation`| GET    | Car recommendation input form    |
-| `/get_recommendations` | POST | API endpoint for recommendations (returns JSON) |
-| `/results`       | GET    | Display recommendations (HTML)   |
-| `/dashboard`     | GET    | Dashboard with insights           |
-| `/about`         | GET    | About the project                 |
+6. **Fallback**  
+   If no cars are found, the system intelligently searches in the next closest cluster or falls back to mock recommendations.
 
 ---
 
-## 🛠️ Installation and Setup
+## ⚙️ Tech Stack
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/syedsaadali11/CarMatchPro.git
-   cd CarMatchPro
+| Layer | Technology |
+|-------|------------|
+| Web Framework | Flask |
+| Frontend | HTML5, CSS3 (Jinja2 Templates) |
+| ML Backend | Python (pandas, scikit-learn, joblib, NumPy) |
+| Data | Custom dataset of car listings (clustered using KMeans) |
+| Deployment Ready | Flask-based WSGI app (`app.py`) |
+
+---
+
+## 🖼 Screenshots
+
+> Below are sample UI views and system architecture diagrams.
+
+| Home Page                      | Home Alternate View             |
+| ----------------------------- | ------------------------------- |
+| ![](assets/home.png)          | ![](assets/home1.png)           |
+
+| Home Variation                 | Find a Car Page                 |
+| ----------------------------- | ------------------------------- |
+| ![](assets/home2.png)         | ![](assets/findcarpage.png)     |
+
+| Dashboard Overview             | Dashboard Details               |
+| ----------------------------- | ------------------------------- |
+| ![](assets/dashboard.png)     | ![](assets/dashboard2.png)      |
+
+| Insights View                  | Search Result Page              |
+| ----------------------------- | ------------------------------- |
+| ![](assets/dashboardinsights.png) | ![](assets/result.png)      |
+
+| Tech Stack Diagram             | Working Flow Chart              |
+| ----------------------------- | ------------------------------- |
+| ![](assets/techstack.png)     | ![](assets/workingflow.png)     |
+
+---
+
+## 📬 Contact
+
+For access to the full version (with models and data), or to collaborate:
+
+📧 Email: [syedsaadi427@gmail.com](mailto:syedsaadi427@gmail.com)  
+🔗 GitHub: [@syedsaadali11](https://github.com/syedsaadali11)
+
+---
